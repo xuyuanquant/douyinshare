@@ -1,0 +1,10 @@
+douyinshareenv/
+data/
+results/
+.DS_Store
+.vscode/
+.idea/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+__pycache__/
