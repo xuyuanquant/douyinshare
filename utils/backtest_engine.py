@@ -51,7 +51,7 @@ class BacktestEngine:
         print(f"开始回测 {symbol}...")
         initial_value = self.cerebro.broker.getvalue()
         results = self.cerebro.run()
-        self.cerebro.plot()
+        self.cerebro.plot(style='candlestick')
         final_value = self.cerebro.broker.getvalue()
         
         # 收集结果

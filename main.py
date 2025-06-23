@@ -9,7 +9,7 @@ import sys
 
 from utils.data_downloader import DataDownloader
 from utils.backtest_engine import BacktestEngine
-from strategies import MACrossStrategy, RSIStrategy
+from strategies import MACrossStrategy, RSIStrategy, MABOXBreakStrategy
 from config.settings import PERIOD_MAPPING
 
 app = typer.Typer(help="股票回测研究工具")
@@ -151,7 +151,8 @@ def load_strategy(strategy_name: str):
     # 内置策略
     builtin_strategies = {
         "ma_cross": MACrossStrategy,
-        "rsi": RSIStrategy
+        "rsi": RSIStrategy,
+        "ma_box_break": MABOXBreakStrategy
     }
     
     if strategy_name in builtin_strategies:

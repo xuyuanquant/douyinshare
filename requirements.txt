@@ -8,3 +8,4 @@ seaborn==0.12.2
 rich==13.5.2
 python-dotenv==1.0.0
 click==8.1.7 
+gmapi>=1.2.0 

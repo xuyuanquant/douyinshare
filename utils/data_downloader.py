@@ -8,8 +8,15 @@ from datetime import datetime
 from typing import List, Optional
 import time
 
-from config.settings import TUSHARE_TOKEN, DATA_DIR, PERIOD_MAPPING, DATA_FILE_FORMAT
+from config.settings import TUSHARE_TOKEN, DATA_DIR, PERIOD_MAPPING, DATA_FILE_FORMAT, gm_token
 
+# 新增掘金量化API导入
+try:
+    from gm.api import set_token, history
+    gm_api_available = True
+except ImportError:
+    print("掘金量化API未安装")
+    gm_api_available = False
 
 class DataDownloader:
     """股票数据下载器"""
@@ -21,6 +28,11 @@ class DataDownloader:
         
         ts.set_token(TUSHARE_TOKEN)
         self.pro = ts.pro_api()
+        
+        # 掘金token
+        self.gm_token = gm_token
+        if gm_api_available and self.gm_token:
+            set_token(self.gm_token)
         
     def download_stock_data(
         self,
@@ -46,12 +58,12 @@ class DataDownloader:
         print(f"正在下载 {symbol} 的 {period} 数据...")
         
         try:
-            # 根据周期选择不同的API
-            if period in ['1min', '5min', '10min', '15min', '30min', '60min']:
-                # 分钟级数据使用不同的API
+            # 分钟级别优先用掘金量化API
+            if period in ['1min', '5min', '10min', '15min', '30min', '60min'] and gm_api_available and self.gm_token:
+                df = self._download_minute_data_gm(symbol, period, start_date, end_date)
+            elif period in ['1min', '5min', '10min', '15min', '30min', '60min']:
                 df = self._download_minute_data(symbol, period, start_date, end_date)
             else:
-                # 日线及以上使用pro_bar
                 df = self._download_daily_data(symbol, period, start_date, end_date)
             
             if df is None or df.empty:
@@ -209,4 +221,31 @@ class DataDownloader:
             return df
         else:
             print(f"本地数据文件不存在: {filepath}")
+            return pd.DataFrame()
+
+    def _download_minute_data_gm(self, symbol: str, period: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """用掘金量化API下载分钟级数据，bob作为datetime"""
+        try:
+            # symbol格式转换: 000001.SZ -> SZSE.000001
+            if symbol.endswith('.SZ'):
+                gm_symbol = f'SZSE.{symbol[:6]}'
+            elif symbol.endswith('.SH'):
+                gm_symbol = f'SHSE.{symbol[:6]}'
+            else:
+                gm_symbol = symbol
+            # period格式转换: 5min -> 5m, 1min -> 1m, 60min -> 60m
+            freq_map = {'1min': '1m', '5min': '5m', '10min': '10m', '15min': '15m', '30min': '30m', '60min': '60m'}
+            gm_period = freq_map.get(period, period)
+            # 掘金API要求时间格式: yyyy-mm-dd HH:MM:SS
+            start_time = start_date + ' 09:00:00'
+            end_time = end_date + ' 15:30:00'
+            df = history(symbol=gm_symbol, frequency=gm_period, start_time=start_time, end_time=end_time,
+                         fields='open,high,low,close,volume,bob', df=True)
+            if 'bob' in df.columns:
+                df['datetime'] = pd.to_datetime(df['bob'])
+                df.drop(columns=['bob'], inplace=True)
+            print(f"掘金API分钟数据获取成功: {df}")
+            return df
+        except Exception as e:
+            print(f"掘金API分钟数据获取失败: {e}")
             return pd.DataFrame() 

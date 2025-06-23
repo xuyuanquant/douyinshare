@@ -24,6 +24,9 @@ STRATEGIES_DIR.mkdir(exist_ok=True)
 # Tushare配置
 TUSHARE_TOKEN = os.getenv("TUSHARE_TOKEN", "")
 
+# 掘金量化配置
+gm_token = os.getenv("GM_TOKEN", "")
+
 # 数据周期映射
 PERIOD_MAPPING = {
     "1min": "1min",
